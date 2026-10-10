@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Archives & Builds
+*.zip
+*.tar.gz
+
+# System & Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
