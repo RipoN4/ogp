@@ -388,11 +388,11 @@ if ( file_exists( get_template_directory() . '/inc/plugin-update-checker/plugin-
 		'ogp'
 	);
 
-	// Authenticate for private GitHub repository updates.
-	// Can be overridden in wp-config.php via: define( 'OGP_GITHUB_TOKEN', '...' );
-	$ogp_token = defined( 'OGP_GITHUB_TOKEN' ) ? OGP_GITHUB_TOKEN : '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';
-	if ( ! empty( $ogp_token ) ) {
-		$ogp_update_checker->setAuthentication( $ogp_token );
+	// Optional: For private GitHub repositories, authenticate with a Personal Access Token (PAT).
+	// Define in wp-config.php: define( 'OGP_GITHUB_TOKEN', 'your_personal_access_token' );
+	// When the repository is made public, no token is needed at all.
+	if ( defined( 'OGP_GITHUB_TOKEN' ) && OGP_GITHUB_TOKEN ) {
+		$ogp_update_checker->setAuthentication( OGP_GITHUB_TOKEN );
 	}
 
 	// Set default release branch
