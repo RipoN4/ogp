@@ -499,6 +499,9 @@ if ( file_exists( get_template_directory() . '/inc/plugin-update-checker/plugin-
 
 	// Set default release branch
 	$ogp_update_checker->setBranch( 'main' );
+
+	// Enable release assets so WordPress downloads the clean pre-built ogp.zip
+	$ogp_update_checker->getVcsApi()->enableReleaseAssets();
 }
 
 
