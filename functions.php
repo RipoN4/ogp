@@ -263,22 +263,22 @@ function register_custom_taxonomies() {
     // Register "Model" taxonomy (non-hierarchical, like tags)
     register_taxonomy('model', 'post', array(
         'labels' => array(
-            'name' => 'Actor',
-            'singular_name' => 'Actor',
-            'search_items' => 'Search Actors',
-            'all_items' => 'All Actors',
-            'edit_item' => 'Edit Actor',
-            'update_item' => 'Update Actor',
-            'add_new_item' => 'Add New Actor',
-            'new_item_name' => 'New Model Actor',
-            'menu_name' => 'Actors',
+            'name' => 'Models',
+            'singular_name' => 'Model',
+            'search_items' => 'Search Models',
+            'all_items' => 'All Models',
+            'edit_item' => 'Edit Model',
+            'update_item' => 'Update Model',
+            'add_new_item' => 'Add New Model',
+            'new_item_name' => 'New Model Name',
+            'menu_name' => 'Models',
         ),
         'public' => true,
         'hierarchical' => false, // Non-hierarchical (like tags)
         'show_ui' => true,
         'show_admin_column' => true,
         'show_in_rest' => true, // Enable Gutenberg support
-        'rewrite' => array('slug' => 'actor'),
+        'rewrite' => array('slug' => 'model'),
     ));
 
     // Register "Series" taxonomy (hierarchical, like categories)
@@ -307,6 +307,108 @@ function register_custom_taxonomies() {
 
 // Hook into the 'init' action
 add_action('init', 'register_custom_taxonomies');
+
+/**
+ * Helper function: Automatically migrate legacy 'actor' taxonomy to new 'model' taxonomy.
+ * Runs once upon updating the theme. Safely transfers terms and post relationships to 'model'.
+ */
+function ogp_migrate_actor_to_model_taxonomy() {
+	// Allow manual re-trigger by admin if needed: ?ogp_remigrate_taxonomies=1
+	if ( isset( $_GET['ogp_remigrate_taxonomies'] ) && current_user_can( 'manage_options' ) ) {
+		delete_option( 'ogp_migrated_actor_to_model' );
+	}
+
+	// Only run once automatically
+	if ( get_option( 'ogp_migrated_actor_to_model' ) ) {
+		return;
+	}
+
+	global $wpdb;
+
+	// Check if any legacy terms exist in 'actor' taxonomy
+	$actor_terms = $wpdb->get_results( "
+		SELECT tt.term_taxonomy_id, tt.term_id, tt.description, tt.parent, tt.count, t.name, t.slug
+		FROM {$wpdb->term_taxonomy} tt
+		INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+		WHERE tt.taxonomy = 'actor'
+	" );
+
+	if ( ! empty( $actor_terms ) ) {
+		foreach ( $actor_terms as $actor_term ) {
+			// Check if a term with the same slug, name, or term_id already exists in 'model'
+			$existing_model_term = $wpdb->get_row( $wpdb->prepare( "
+				SELECT tt.term_taxonomy_id, tt.term_id
+				FROM {$wpdb->term_taxonomy} tt
+				INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+				WHERE tt.taxonomy = 'model' AND (t.slug = %s OR t.name = %s OR tt.term_id = %d)
+				LIMIT 1
+			", $actor_term->slug, $actor_term->name, $actor_term->term_id ) );
+
+			if ( $existing_model_term ) {
+				$old_tt_id = (int) $actor_term->term_taxonomy_id;
+				$new_tt_id = (int) $existing_model_term->term_taxonomy_id;
+
+				if ( $old_tt_id !== $new_tt_id ) {
+					// Reassign post relationships from old actor term to existing model term
+					$object_ids = $wpdb->get_col( $wpdb->prepare(
+						"SELECT object_id FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d",
+						$old_tt_id
+					) );
+
+					if ( ! empty( $object_ids ) ) {
+						foreach ( $object_ids as $object_id ) {
+							$rel_exists = $wpdb->get_var( $wpdb->prepare(
+								"SELECT COUNT(*) FROM {$wpdb->term_relationships} WHERE object_id = %d AND term_taxonomy_id = %d",
+								$object_id,
+								$new_tt_id
+							) );
+
+							if ( ! $rel_exists ) {
+								$wpdb->insert(
+									$wpdb->term_relationships,
+									array(
+										'object_id'        => (int) $object_id,
+										'term_taxonomy_id' => $new_tt_id,
+										'term_order'       => 0,
+									),
+									array( '%d', '%d', '%d' )
+								);
+							}
+						}
+					}
+
+					// Clean up legacy actor relationships & term_taxonomy row
+					$wpdb->delete( $wpdb->term_relationships, array( 'term_taxonomy_id' => $old_tt_id ), array( '%d' ) );
+					$wpdb->delete( $wpdb->term_taxonomy, array( 'term_taxonomy_id' => $old_tt_id ), array( '%d' ) );
+				}
+			} else {
+				// No duplicate: Directly reassign taxonomy from 'actor' to 'model'
+				// All post relationships via term_taxonomy_id are preserved intact
+				$wpdb->update(
+					$wpdb->term_taxonomy,
+					array( 'taxonomy' => 'model' ),
+					array( 'term_taxonomy_id' => $actor_term->term_taxonomy_id ),
+					array( '%s' ),
+					array( '%d' )
+				);
+			}
+		}
+
+		// Clean cache and recalculate term counts
+		clean_taxonomy_cache( 'model' );
+		$all_model_terms = get_terms( array( 'taxonomy' => 'model', 'hide_empty' => false, 'fields' => 'ids' ) );
+		if ( ! is_wp_error( $all_model_terms ) && ! empty( $all_model_terms ) ) {
+			wp_update_term_count_now( $all_model_terms, 'model' );
+		}
+	}
+
+	// Flush rewrite rules once so that /model/ permalinks work immediately
+	flush_rewrite_rules( false );
+
+	// Mark migration as completed
+	update_option( 'ogp_migrated_actor_to_model', 1 );
+}
+add_action( 'init', 'ogp_migrate_actor_to_model_taxonomy', 20 );
 
 /**
  * Register Widget Areas (Sidebars).

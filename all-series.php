@@ -12,7 +12,7 @@ $series_terms = get_terms( array(
 
 <main id="primary" class="site-main">
     <header class="page-header">
-        <h1 class="page-title"><?php esc_html_e( 'All Series', 'ogp' ); ?></h1>
+        <h1 class="page-title"><?php the_title(); ?></h1>
     </header>
 
     <div class="taxonomy-table-container">

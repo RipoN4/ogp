@@ -33,7 +33,7 @@ The theme includes four custom page templates that provide searchable, sortable 
 | :--- | :--- | :--- | :--- |
 | OTT / Categories | All OTT | `all-categories.php` | Searchable directory of all OTT categories with video counts |
 | Series | All Series | `all-series.php` | Searchable directory of all web series terms with live filtering |
-| Models / Actresses | All Models | `all-models.php` | Searchable directory of all models and cast members |
+| Models | All Models | `all-models.php` | Searchable directory of all models with video counts |
 | Tags | All Tags | `all-tags.php` | Searchable list of all post tags |
 
 **How to create these pages:**
@@ -79,7 +79,7 @@ When adding or editing a video post under **Posts > Add New**, configure the fol
   - **Duration**: Enter the runtime (e.g., `25` or `83`).
 - **Featured Image**: Set a 16:9 thumbnail. This is used on homepage cards, archive grids, and as the video player poster.
 - **Series Taxonomy**: Assign the post to a series term.
-- **Model Taxonomy**: Tag the models or actors featured in the video.
+- **Model Taxonomy**: Tag the models featured in the video.
 - **Category**: Select the OTT platform or main content category.
 
 ---
@@ -90,7 +90,7 @@ When adding or editing a video post under **Posts > Add New**, configure the fol
 ogp/
 ├── 404.php                 # Animated SVG 404 page with buttonless search
 ├── all-categories.php      # Custom page template: All OTT platforms
-├── all-models.php          # Custom page template: All Models/Actresses
+├── all-models.php          # Custom page template: All Models
 ├── all-series.php          # Custom page template: All Series
 ├── all-tags.php            # Custom page template: All Tags
 ├── archive.php             # Unified archive template (Categories, Taxonomies, Tags)
